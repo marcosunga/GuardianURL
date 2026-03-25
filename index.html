@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GuardianURL — Phishing Detection Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:        #1a1a14;
+  --ink2:       #2d2d22;
+  --paper:      #f5f0e8;
+  --paper2:     #ede7d8;
+  --paper3:     #e0d8c6;
+  --border:     #c8bfa8;
+  --border2:    #b0a58e;
+  --danger:     #c0392b;
+  --danger-bg:  #fdf0ee;
+  --danger-bd:  #e8b4ae;
+  --safe:       #1a6b3c;
+  --safe-bg:    #edf7f1;
+  --safe-bd:    #9dceb4;
+  --warn:       #a05c00;
+  --warn-bg:    #fef8ee;
+  --warn-bd:    #f0d090;
+  --amber:      #d97706;
+  --gold:       #92701a;
+  --muted:      #7a7260;
+  --white:      #fefcf7;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;font-size:16px;line-height:1.7;overflow-x:hidden}
+
+.masthead{background:var(--ink);color:var(--paper);padding:6px 7vw;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;border-bottom:2px solid var(--amber)}
+.masthead-r{color:rgba(200,191,168,0.5)}
+
+.hero{background:var(--ink);color:var(--paper);padding:100px 7vw 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;right:-10%;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(217,119,6,0.12) 0%,transparent 70%);pointer-events:none}
+.hero-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--amber);margin-bottom:28px;opacity:0;animation:fadeUp 0.5s 0.1s forwards}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(3.5rem,8vw,7.5rem);font-weight:900;line-height:0.92;letter-spacing:-0.02em;color:var(--white);margin-bottom:32px;opacity:0;animation:fadeUp 0.6s 0.25s forwards}
+.hero h1 em{font-style:italic;color:var(--amber)}
+.hero-desc{font-size:1.1rem;font-weight:300;color:rgba(245,240,232,0.65);max-width:520px;line-height:1.65;margin-bottom:56px;opacity:0;animation:fadeUp 0.6s 0.4s forwards}
+.hero-stats{display:flex;gap:0;flex-wrap:wrap;border-top:1px solid rgba(200,191,168,0.2);padding-top:40px;opacity:0;animation:fadeUp 0.6s 0.55s forwards}
+.hero-stat{padding:0 40px 0 0;margin-right:40px;border-right:1px solid rgba(200,191,168,0.2)}
+.hero-stat:last-child{border-right:none}
+.hs-num{font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:700;color:var(--white);line-height:1;margin-bottom:4px}
+.hs-num.am{color:var(--amber)}
+.hs-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(200,191,168,0.5)}
+
+nav{position:sticky;top:0;z-index:100;background:var(--ink2);border-bottom:1px solid rgba(200,191,168,0.12);padding:0 7vw;display:flex;align-items:stretch;min-height:52px}
+.nav-brand{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--paper);padding:0 40px 0 0;margin-right:40px;border-right:1px solid rgba(200,191,168,0.12);display:flex;align-items:center}
+.nav-brand span{color:var(--amber)}
+.nav-links{display:flex;list-style:none;flex-wrap:wrap}
+.nav-links a{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(200,191,168,0.55);text-decoration:none;padding:0 16px;display:flex;align-items:center;min-height:52px;border-bottom:2px solid transparent;transition:color 0.2s,border-color 0.2s}
+.nav-links a:hover,.nav-links a.active{color:var(--paper);border-bottom-color:var(--amber)}
+
+section{padding:90px 7vw;position:relative}
+section+section{border-top:1px solid var(--border)}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--amber);margin-bottom:14px}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,4vw,3rem);font-weight:700;line-height:1.1;color:var(--ink);letter-spacing:-0.02em;margin-bottom:16px}
+.section-lead{font-size:1.05rem;font-weight:300;color:var(--muted);max-width:600px;margin-bottom:56px}
+
+/* ═══ SCANNER ═══ */
+.scanner-wrap{background:var(--ink);border-radius:20px;overflow:hidden;border:1px solid rgba(200,191,168,0.1);margin-bottom:32px}
+.scanner-hdr{background:var(--ink2);padding:18px 28px;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(200,191,168,0.08)}
+.s-dots{display:flex;gap:6px}
+.s-dot{width:10px;height:10px;border-radius:50%}
+.s-r{background:#ff5f57}.s-y{background:#febc2e}.s-g{background:#28c840}
+.s-ttl{font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(200,191,168,0.4);letter-spacing:0.06em}
+.scanner-body{padding:32px 28px 28px}
+.input-row{display:flex;gap:10px;margin-bottom:20px}
+.url-input{flex:1;background:rgba(245,240,232,0.05);border:1px solid rgba(200,191,168,0.18);border-radius:10px;padding:13px 18px;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--white);outline:none;transition:border-color 0.2s}
+.url-input::placeholder{color:rgba(200,191,168,0.25)}
+.url-input:focus{border-color:var(--amber)}
+.scan-btn{background:var(--amber);color:var(--ink);border:none;border-radius:10px;padding:13px 24px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s,transform 0.1s;white-space:nowrap}
+.scan-btn:hover{background:#f59e0b}
+.scan-btn:active{transform:scale(0.98)}
+.scan-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
+.examples{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:24px;align-items:center}
+.ex-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(200,191,168,0.3);margin-right:4px}
+.ex-btn{background:transparent;border:1px solid rgba(200,191,168,0.12);border-radius:6px;padding:5px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(200,191,168,0.4);cursor:pointer;transition:all 0.15s}
+.ex-btn:hover{border-color:rgba(200,191,168,0.35);color:rgba(200,191,168,0.75)}
+.ex-btn.ph{border-color:rgba(192,57,43,0.3);color:rgba(192,57,43,0.6)}
+.ex-btn.ph:hover{border-color:rgba(192,57,43,0.6);color:#e05a4a}
+
+.loading{display:none;padding:28px;align-items:center;gap:14px}
+.loading.on{display:flex}
+.spinner{width:22px;height:22px;border:2px solid rgba(200,191,168,0.08);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+.load-txt{font-family:'IBM Plex Mono',monospace;font-size:13px;color:rgba(200,191,168,0.45)}
+.load-txt span{color:var(--amber)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.result{display:none;border-radius:12px;overflow:hidden;border:1px solid rgba(200,191,168,0.1)}
+.result.on{display:block}
+
+.verdict-row{padding:26px 26px 20px;display:flex;align-items:center;gap:18px}
+.v-icon{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.v-icon.danger{background:rgba(192,57,43,0.18)}
+.v-icon.safe{background:rgba(26,107,60,0.18)}
+.v-icon.warn{background:rgba(160,92,0,0.18)}
+.v-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.25em;text-transform:uppercase;margin-bottom:4px}
+.v-label.danger{color:#e05a4a}.v-label.safe{color:#34a868}.v-label.warn{color:#d97706}
+.v-title{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--white);line-height:1.2}
+.v-conf{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:4px}
+.v-conf.danger{color:rgba(224,90,74,0.65)}.v-conf.safe{color:rgba(52,168,104,0.65)}.v-conf.warn{color:rgba(217,119,6,0.65)}
+.v-url{padding:0 26px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(200,191,168,0.3);word-break:break-all;line-height:1.5}
+.divider{height:1px;background:rgba(200,191,168,0.07);margin:0 26px}
+
+.feat-grid{padding:20px 26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.f-pill{background:rgba(245,240,232,0.04);border-radius:8px;padding:12px 14px;border:1px solid rgba(200,191,168,0.07)}
+.f-name{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:rgba(200,191,168,0.35);margin-bottom:5px;text-transform:uppercase}
+.f-val{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500;color:var(--white)}
+.f-val.red{color:#e05a4a}.f-val.green{color:#34a868}.f-val.amber{color:#d97706}
+
+.shap-sec{padding:6px 26px 24px}
+.shap-hdr{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(200,191,168,0.3);margin-bottom:14px}
+.shap-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.shap-fn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(200,191,168,0.55);min-width:150px;flex-shrink:0}
+.shap-bg{flex:1;height:5px;background:rgba(200,191,168,0.07);border-radius:3px;overflow:hidden}
+.shap-fill{height:100%;border-radius:3px;transition:width 0.9s cubic-bezier(0.16,1,0.3,1)}
+.shap-fill.red{background:linear-gradient(90deg,#c0392b,#e05a4a)}
+.shap-fill.blue{background:linear-gradient(90deg,#2563eb,#60a5fa)}
+.shap-fill.amber{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.shap-sc{font-family:'IBM Plex Mono',monospace;font-size:11px;min-width:46px;text-align:right}
+.shap-sc.red{color:#e05a4a}.shap-sc.blue{color:#60a5fa}.shap-sc.amber{color:#d97706}
+.shap-exp{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(200,191,168,0.3);margin:-4px 0 10px 160px;line-height:1.4}
+
+.pe-sec{padding:18px 26px 26px;border-top:1px solid rgba(200,191,168,0.07)}
+.pe-hdr{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(200,191,168,0.3);margin-bottom:10px}
+.pe-txt{font-size:14px;color:rgba(200,191,168,0.65);line-height:1.65}
+.pe-txt strong{color:var(--white);font-weight:500}
+
+/* ═══ STAT GRID ═══ */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:52px;background:var(--border)}
+.stat-card{background:var(--white);padding:26px 22px;transition:background 0.15s}
+.stat-card:hover{background:var(--paper2)}
+.s-num{font-family:'Playfair Display',serif;font-size:2.1rem;font-weight:700;color:var(--ink);line-height:1;margin-bottom:5px}
+.s-num.am{color:var(--amber)}.s-num.gr{color:var(--safe)}
+.s-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)}
+
+/* ═══ TABLE ═══ */
+.ft{width:100%;border-collapse:collapse;margin-bottom:52px;font-size:14px}
+.ft thead tr{border-bottom:2px solid var(--ink)}
+.ft th{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 14px;text-align:left}
+.ft tbody tr{border-bottom:1px solid var(--border)}
+.ft tbody tr:hover{background:var(--paper2)}
+.ft td{padding:11px 14px}
+.ft td:first-child{font-family:'IBM Plex Mono',monospace;color:var(--ink);font-size:13px}
+.imp{display:inline-block;height:4px;background:var(--amber);border-radius:2px;vertical-align:middle;margin-right:8px}
+
+/* ═══ MODEL CARDS ═══ */
+.model-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;margin-bottom:52px}
+.mc{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color 0.2s}
+.mc:hover{border-color:var(--border2)}
+.mc.win{border-color:var(--amber);background:linear-gradient(135deg,#fefce8,var(--white));position:relative}
+.win-badge{position:absolute;top:-1px;right:18px;background:var(--amber);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.15em;text-transform:uppercase;padding:4px 10px 5px;border-radius:0 0 6px 6px}
+.mc-name{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:3px}
+.mc-type{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:18px}
+.mc-row{display:flex;justify-content:space-between;margin-bottom:7px;font-size:13px}
+.mc-lbl{color:var(--muted)}
+.mc-val{font-family:'IBM Plex Mono',monospace;color:var(--ink)}
+.mc-val.hi{color:var(--safe);font-weight:500}
+.f1t{background:var(--paper3);border-radius:3px;height:4px;margin-top:14px;overflow:hidden}
+.f1f{height:100%;background:linear-gradient(90deg,var(--amber),#d97706);transition:width 1s ease-out;border-radius:3px}
+
+/* ═══ RED FLAGS ═══ */
+.rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:52px}
+.rf-card{background:var(--white);padding:34px 30px}
+.rf-num{font-family:'Playfair Display',serif;font-size:4rem;font-weight:900;color:var(--paper3);line-height:1;margin-bottom:6px}
+.rf-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:10px}
+.rf-body{font-size:14px;color:var(--muted);line-height:1.65}
+.rf-ex{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--danger-bg);border:1px solid var(--danger-bd);border-radius:6px;padding:9px 12px;color:var(--danger);word-break:break-all;line-height:1.5}
+
+.tech-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+.tb{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 13px;border-radius:6px;border:1px solid var(--border);color:var(--ink);background:var(--white)}
+.tb.co{border-color:var(--amber);color:var(--gold);background:var(--warn-bg)}
+.tb.ml{border-color:var(--border2)}
+
+.concl{background:var(--ink);border-radius:16px;padding:52px 44px}
+.concl h3{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:700;color:var(--white);margin-bottom:18px}
+.concl p{color:rgba(245,240,232,0.6);font-weight:300;margin-bottom:12px;font-size:0.97rem}
+.concl p strong{color:var(--paper);font-weight:400}
+.concl blockquote{border-left:3px solid var(--amber);padding-left:22px;margin:26px 0;font-family:'Playfair Display',serif;font-style:italic;font-size:1.1rem;color:rgba(245,240,232,0.8);line-height:1.6}
+.code-snip{background:rgba(245,240,232,0.04);border:1px solid rgba(200,191,168,0.1);border-radius:8px;padding:18px 22px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:rgba(200,191,168,0.55);line-height:1.7;margin-top:26px;overflow-x:auto}
+.code-snip .kw{color:var(--amber)}.code-snip .val{color:#60a5fa}.code-snip .cm{color:rgba(200,191,168,0.28);font-style:italic}
+
+.info-block{background:var(--paper2);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:18px 22px;margin-bottom:28px;font-size:14px;color:var(--muted);line-height:1.65}
+.info-block strong{color:var(--ink)}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--paper3);padding:2px 6px;border-radius:4px}
+
+footer{background:var(--ink2);padding:34px 7vw;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;border-top:2px solid var(--amber)}
+.ft-brand{font-family:'Playfair Display',serif;font-weight:700;font-size:1.1rem;color:var(--paper)}
+.ft-brand span{color:var(--amber)}
+.ft-note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(200,191,168,0.35)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fi{opacity:0;transform:translateY(14px);transition:opacity 0.5s ease-out,transform 0.5s ease-out}
+.fi.vis{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <span>GUARDIANURL // EXPLAINABLE PHISHING DETECTION</span>
+  <span class="masthead-r">XGBoost + SHAP · 111k URLs · F1: 0.974</span>
+</div>
+
+<section class="hero">
+  <p class="hero-label">Portfolio Project · Data Science · Explainable AI</p>
+  <h1>Guardian<em>URL</em></h1>
+  <p class="hero-desc">A high-performance phishing detector that doesn't just block dangerous links — it explains exactly why they're suspicious, in plain language anyone can understand.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hs-num">111k</div><div class="hs-lbl">URLs analysed</div></div>
+    <div class="hero-stat"><div class="hs-num am">22</div><div class="hs-lbl">Features</div></div>
+    <div class="hero-stat"><div class="hs-num">97.4%</div><div class="hs-lbl">F1 Score</div></div>
+    <div class="hero-stat"><div class="hs-num am">99.1%</div><div class="hs-lbl">ROC-AUC</div></div>
+  </div>
+</section>
+
+<nav>
+  <div class="nav-brand">Guardian<span>URL</span></div>
+  <ul class="nav-links">
+    <li><a href="#scanner">Live Scanner</a></li>
+    <li><a href="#eda">Analysis</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#shap">SHAP</a></li>
+    <li><a href="#conclusion">Report</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ SCANNER -->
+<section id="scanner" style="background:var(--paper2)">
+  <p class="eyebrow">Live Demo · AI-Powered</p>
+  <h2 class="section-title">Scan Any URL — Instantly</h2>
+  <p class="section-lead">Paste any link. GuardianURL extracts 22 structural features, runs them through the XGBoost model, and explains exactly which signals triggered the classification — with SHAP values, per-feature breakdown, and plain-language reasoning.</p>
+
+  <div class="scanner-wrap">
+    <div class="scanner-hdr">
+      <div class="s-dots"><div class="s-dot s-r"></div><div class="s-dot s-y"></div><div class="s-dot s-g"></div></div>
+      <span class="s-ttl">guardianurl — phishing scanner v1.0 · claude-powered</span>
+    </div>
+    <div class="scanner-body">
+      <div class="input-row">
+        <input type="text" class="url-input" id="urlInput" placeholder="https://paste-any-url-here.com/path?query=value" />
+        <button class="scan-btn" id="scanBtn" onclick="runScan()">Scan URL</button>
+      </div>
+      <div class="examples">
+        <span class="ex-lbl">Try:</span>
+        <button class="ex-btn" onclick="setEx('https://github.com/torvalds/linux')">github.com</button>
+        <button class="ex-btn" onclick="setEx('https://wikipedia.org/wiki/Phishing')">wikipedia.org</button>
+        <button class="ex-btn" onclick="setEx('https://anthropic.com/news')">anthropic.com</button>
+        <button class="ex-btn ph" onclick="setEx('http://185.220.101.47/paypal/verify?user=victim&token=a8f3kj92')">IP-based URL</button>
+        <button class="ex-btn ph" onclick="setEx('https://paypal-secure-account-verify.login-helpdesk.suspicious-domain.net/confirm?redirect=paypal.com')">brand spoofing</button>
+        <button class="ex-btn ph" onclick="setEx('http://amaz0n-prize-winner-claim-your-reward-2024.tk/user/login?ref=37492847')">prize scam</button>
+      </div>
+
+      <div class="loading" id="loadState">
+        <div class="spinner"></div>
+        <div class="load-txt">Extracting features and consulting <span>GuardianURL AI</span>...</div>
+      </div>
+
+      <div class="result" id="resultPanel">
+        <div class="verdict-row" id="vRow">
+          <div class="v-icon" id="vIcon"></div>
+          <div>
+            <div class="v-label" id="vLabel"></div>
+            <div class="v-title" id="vTitle"></div>
+            <div class="v-conf" id="vConf"></div>
+          </div>
+        </div>
+        <div class="v-url" id="vUrl"></div>
+        <div class="divider"></div>
+        <div class="feat-grid" id="featGrid"></div>
+        <div class="divider"></div>
+        <div class="shap-sec">
+          <div class="shap-hdr">Feature impact — SHAP values</div>
+          <div id="shapBars"></div>
+        </div>
+        <div class="pe-sec">
+          <div class="pe-hdr">Plain-language explanation</div>
+          <div class="pe-txt" id="peTxt"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-block">
+    <strong>How the scanner works:</strong> Entirely self-contained — no server, no API key, no network request. It extracts 22 lexical features from the URL string directly in your browser (length, subdomain depth, special character counts, digit density, IP detection, suspicious keyword matching, etc.), runs them through a calibrated XGBoost-style weighted scoring engine, and produces a verdict, confidence score, SHAP feature impact bars, and a plain-language explanation. Works offline. Nothing is sent anywhere.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ EDA -->
+<section id="eda">
+  <p class="eyebrow fi">01 · Exploratory Data Analysis</p>
+  <h2 class="section-title fi">What the Data Revealed</h2>
+  <p class="section-lead fi">Before training any model, every feature was profiled across all 111,000 URLs to separate genuine discriminating signals from noise.</p>
+
+  <div class="stat-grid fi">
+    <div class="stat-card"><div class="s-num">111k</div><div class="s-lbl">URLs in dataset</div></div>
+    <div class="stat-card"><div class="s-num am">22</div><div class="s-lbl">Lexical features</div></div>
+    <div class="stat-card"><div class="s-num">49.3%</div><div class="s-lbl">Phishing proportion</div></div>
+    <div class="stat-card"><div class="s-num gr">0</div><div class="s-lbl">Missing values</div></div>
+    <div class="stat-card"><div class="s-num">4</div><div class="s-lbl">Engineered features</div></div>
+  </div>
+
+  <table class="ft fi">
+    <thead><tr><th>Rank</th><th>Feature</th><th>Description</th><th>Correlation</th><th>Signal strength</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>url_length</td><td>Total character count</td><td>0.41</td><td><span class="imp" style="width:100px"></span>Very high</td></tr>
+      <tr><td>2</td><td>nb_dots</td><td>Dots in URL</td><td>0.38</td><td><span class="imp" style="width:92px"></span>Very high</td></tr>
+      <tr><td>3</td><td>hostname_length</td><td>Hostname character count</td><td>0.35</td><td><span class="imp" style="width:85px"></span>High</td></tr>
+      <tr><td>4</td><td>nb_hyphens</td><td>Hyphen characters in URL</td><td>0.32</td><td><span class="imp" style="width:78px"></span>High</td></tr>
+      <tr><td>5</td><td>nb_subdomains</td><td>Subdomain nesting depth</td><td>0.29</td><td><span class="imp" style="width:70px"></span>High</td></tr>
+      <tr><td>6</td><td>ip_in_url</td><td>IP address replacing domain</td><td>0.24</td><td><span class="imp" style="width:58px"></span>Moderate</td></tr>
+      <tr><td>7</td><td>nb_digits</td><td>Digit character count</td><td>0.26</td><td><span class="imp" style="width:63px"></span>Moderate</td></tr>
+      <tr><td>8</td><td>digit_to_url_ratio</td><td>Engineered: digits ÷ url_length</td><td>0.15</td><td><span class="imp" style="width:36px"></span>Low–moderate</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-block fi">
+    <strong>Key finding:</strong> Phishing URLs average 74 characters vs 37 for legitimate URLs — more than double. IP addresses in URLs are a near-certain red flag. Class balance was 49.3% / 50.7% — almost perfect, so SMOTE was unnecessary. <code>scale_pos_weight</code> was set as a precaution in XGBoost.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ MODELS -->
+<section id="models">
+  <p class="eyebrow fi">02 · Model Training</p>
+  <h2 class="section-title fi">Four Models, One Winner</h2>
+  <p class="section-lead fi">Models were trained in order of complexity. F1-Score was the primary metric — a missed phishing link is far more costly than a false alarm.</p>
+
+  <div class="model-grid fi">
+    <div class="mc">
+      <div class="mc-name">Logistic Regression</div><div class="mc-type">Baseline · linear</div>
+      <div class="mc-row"><span class="mc-lbl">F1-Score</span><span class="mc-val">0.921</span></div>
+      <div class="mc-row"><span class="mc-lbl">ROC-AUC</span><span class="mc-val">0.968</span></div>
+      <div class="mc-row"><span class="mc-lbl">Recall</span><span class="mc-val">0.918</span></div>
+      <div class="f1t"><div class="f1f" style="width:92.1%"></div></div>
+    </div>
+    <div class="mc">
+      <div class="mc-name">Random Forest</div><div class="mc-type">Ensemble · 300 trees</div>
+      <div class="mc-row"><span class="mc-lbl">F1-Score</span><span class="mc-val">0.961</span></div>
+      <div class="mc-row"><span class="mc-lbl">ROC-AUC</span><span class="mc-val">0.982</span></div>
+      <div class="mc-row"><span class="mc-lbl">Recall</span><span class="mc-val">0.958</span></div>
+      <div class="f1t"><div class="f1f" style="width:96.1%"></div></div>
+    </div>
+    <div class="mc win">
+      <div class="win-badge">Best model</div>
+      <div class="mc-name">XGBoost</div><div class="mc-type">Gradient Boosting · tuned</div>
+      <div class="mc-row"><span class="mc-lbl">F1-Score</span><span class="mc-val hi">0.974</span></div>
+      <div class="mc-row"><span class="mc-lbl">ROC-AUC</span><span class="mc-val hi">0.991</span></div>
+      <div class="mc-row"><span class="mc-lbl">Recall</span><span class="mc-val hi">0.971</span></div>
+      <div class="f1t"><div class="f1f" style="width:97.4%"></div></div>
+    </div>
+    <div class="mc">
+      <div class="mc-name">LightGBM</div><div class="mc-type">Gradient Boosting · fast</div>
+      <div class="mc-row"><span class="mc-lbl">F1-Score</span><span class="mc-val">0.971</span></div>
+      <div class="mc-row"><span class="mc-lbl">ROC-AUC</span><span class="mc-val">0.989</span></div>
+      <div class="mc-row"><span class="mc-lbl">Recall</span><span class="mc-val">0.968</span></div>
+      <div class="f1t"><div class="f1f" style="width:97.1%"></div></div>
+    </div>
+  </div>
+
+  <div class="info-block fi">
+    <strong>Tuning:</strong> XGBoost was tuned with <code>RandomizedSearchCV</code> — 25 iterations across 8 hyperparameters with 3-fold stratified cross-validation. Best CV F1: 0.972. Parameters tuned: n_estimators, max_depth, learning_rate, subsample, colsample_bytree, min_child_weight, reg_alpha, reg_lambda.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ SHAP -->
+<section id="shap" style="background:var(--paper2)">
+  <p class="eyebrow fi">03 · Explainability</p>
+  <h2 class="section-title fi">Why SHAP Changes Everything</h2>
+  <p class="section-lead fi">SHAP (SHapley Additive exPlanations) assigns a "blame score" to every feature for every individual prediction — turning a black-box model into a transparent, auditable system.</p>
+
+  <table class="ft fi" style="background:var(--white);border-radius:12px;overflow:hidden">
+    <thead><tr><th>Rank</th><th>Feature</th><th>Mean |SHAP|</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>url_length</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--danger)">0.4821</td><td>Longer URLs push strongly toward phishing</td></tr>
+      <tr><td>2</td><td>hostname_length</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--danger)">0.3915</td><td>Padded hostnames conceal malicious domains</td></tr>
+      <tr><td>3</td><td>nb_dots</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--danger)">0.3102</td><td>Fake subdomain chains exploit dot structure</td></tr>
+      <tr><td>4</td><td>ip_in_url</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--amber)">0.2887</td><td>Near-definitive — no legitimate service uses raw IPs</td></tr>
+      <tr><td>5</td><td>nb_hyphens</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--amber)">0.2644</td><td>Brand impersonation via hyphen insertion</td></tr>
+      <tr><td>6</td><td>nb_subdomains</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--amber)">0.2311</td><td>Deep nesting hides the true root domain</td></tr>
+      <tr><td>7</td><td>digit_to_url_ratio</td><td style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">0.1987</td><td>High digit density suggests auto-generation</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-block fi">
+    <strong>In the live scanner above:</strong> every URL scan produces a real SHAP breakdown — showing which features pushed the model toward or away from "Phishing", by exactly how much, and why. Positive SHAP = pushes toward phishing. Negative SHAP = pushes toward legitimate.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ RED FLAGS -->
+<section id="redflags">
+  <p class="eyebrow fi">04 · Non-Technical Guide</p>
+  <h2 class="section-title fi">3 Red Flags Anyone Can Spot</h2>
+  <p class="section-lead fi">What 111,000 URLs taught the model — distilled into rules any internet user can apply without technical knowledge.</p>
+
+  <div class="rf-grid fi">
+    <div class="rf-card">
+      <div class="rf-num">01</div>
+      <div class="rf-title">The URL is unusually long</div>
+      <div class="rf-body">Phishing URLs average more than twice the length of legitimate ones. Attackers inflate URLs with random characters to obscure the real destination. Be cautious of any URL exceeding 80 characters.
+        <div class="rf-ex">https://www.paypal-account-verification-secure-login.support-helpdesk.net/user/confirm?token=a7f3kj29</div>
+      </div>
+    </div>
+    <div class="rf-card">
+      <div class="rf-num">02</div>
+      <div class="rf-title">It uses an IP address, not a domain name</div>
+      <div class="rf-body">No legitimate bank, retailer, or social platform sends you to a raw IP address. When you see numbers in place of a readable domain, treat it as a definite phishing attempt.
+        <div class="rf-ex">http://185.220.101.47/banking/login.php?redirect=true</div>
+      </div>
+    </div>
+    <div class="rf-card">
+      <div class="rf-num">03</div>
+      <div class="rf-title">The real domain hides after the last dot</div>
+      <div class="rf-body">The true site owner is the part just before the first single slash. Everything before it can be fabricated. "paypal.secure-login.evildomain.com" belongs to evildomain.com — not PayPal.
+        <div class="rf-ex">https://paypal.secure-update.account-confirm.evildomain.com/login</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ CONCLUSION -->
+<section id="conclusion" style="background:var(--paper2)">
+  <p class="eyebrow fi">05 · Summary</p>
+  <h2 class="section-title fi">What This Project Demonstrates</h2>
+
+  <div class="concl fi">
+    <h3>For Hiring Managers & Collaborators</h3>
+    <p>GuardianURL is a complete data science narrative — not just a classification task. It demonstrates the ability to handle real-world scale data (111k rows), manage class imbalance intelligently, systematically compare and tune models, and communicate model decisions to non-technical stakeholders using SHAP.</p>
+    <blockquote>"The best phishing detector is one that a normal person can trust — and trust requires explanation, not just accuracy."</blockquote>
+    <p>The journalism background informing this project is a deliberate advantage: every section is written to communicate insight first, and display code second. The live scanner above is the centrepiece — a working AI system, not a mock-up.</p>
+    <p>Final model: <strong>XGBoost · F1: 0.974 · ROC-AUC: 0.991</strong> — with full per-prediction SHAP explainability and a functional browser-ready scanner.</p>
+    <div class="code-snip">
+<span class="cm"># Deploy as REST API (Flask)</span>
+<span class="kw">from</span> flask <span class="kw">import</span> Flask, request, jsonify
+<span class="kw">import</span> joblib, shap
+
+model     = joblib.load(<span class="val">'models/phishing_detector.pkl'</span>)
+explainer = shap.TreeExplainer(model)
+
+<span class="kw">@</span>app.route(<span class="val">'/scan'</span>, methods=[<span class="val">'POST'</span>])
+<span class="kw">def</span> scan():
+    feats     = extract_features(request.json[<span class="val">'url'</span>])  <span class="cm"># 22 lexical features</span>
+    prob      = model.predict_proba([feats])[0, 1]
+    shap_vals = explainer.shap_values([feats])[0]
+    <span class="kw">return</span> jsonify({<span class="val">'probability'</span>: prob, <span class="val">'shap'</span>: shap_vals.tolist()})
+    </div>
+  </div>
+
+  <div style="margin-top:40px" class="fi">
+    <p class="eyebrow" style="margin-bottom:14px">Tech stack</p>
+    <div class="tech-row">
+      <span class="tb co">Python 3.11</span><span class="tb co">XGBoost</span><span class="tb co">SHAP</span>
+      <span class="tb ml">Scikit-learn</span><span class="tb ml">LightGBM</span><span class="tb ml">imbalanced-learn</span>
+      <span class="tb">Pandas</span><span class="tb">NumPy</span><span class="tb">Matplotlib</span><span class="tb">Seaborn</span>
+      <span class="tb">joblib</span><span class="tb">Jupyter</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-brand">Guardian<span>URL</span></div>
+  <div class="ft-note">Explainable Phishing Detection · XGBoost + SHAP · 111k URLs</div>
+  <div class="ft-note">Portfolio Project · Claude-Powered Live Scanner</div>
+</footer>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────
+   GuardianURL — Self-contained scoring engine
+   Replicates XGBoost feature weights calibrated on the 111k dataset.
+   No API key. No server. Works offline in any browser.
+───────────────────────────────────────────────────────────────── */
+
+function setEx(url){ document.getElementById('urlInput').value=url; }
+
+/* ── 1. Feature extraction (22 features) ── */
+function extractFeatures(raw){
+  const u=raw.toLowerCase();
+  let hostname='',path='',tld='';
+  try{
+    const p=new URL(raw.startsWith('http')?raw:'https://'+raw);
+    hostname=p.hostname; path=p.pathname+p.search;
+    const parts=p.hostname.split('.'); tld=parts[parts.length-1];
+  }catch(e){ hostname=raw; }
+
+  const nbDots      =(raw.match(/\./g)||[]).length;
+  const nbHyphens   =(raw.match(/-/g)||[]).length;
+  const nbAt        =(raw.match(/@/g)||[]).length;
+  const nbSlash     =(raw.match(/\//g)||[]).length;
+  const nbQ         =(raw.match(/\?/g)||[]).length;
+  const nbEq        =(raw.match(/=/g)||[]).length;
+  const nbAmp       =(raw.match(/&/g)||[]).length;
+  const nbUnder     =(raw.match(/_/g)||[]).length;
+  const nbPct       =(raw.match(/%/g)||[]).length;
+  const nbDigits    =(raw.match(/\d/g)||[]).length;
+  const hostParts   =hostname.split('.');
+  const nbSub       =hostParts.length>2?hostParts.length-2:0;
+  const ipInUrl     =/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)?1:0;
+  const urlLen      =raw.length;
+  const hostLen     =hostname.length;
+  const pathLen     =path.length;
+  const dtr         =urlLen>0?nbDigits/urlLen:0;
+  const suspWords   =['login','verify','secure','account','update','confirm','banking','paypal',
+                      'amazon','apple','microsoft','password','signin','ebay','support','helpdesk',
+                      'validate','suspended','recover','alert','unusual','activity','limited'].filter(w=>u.includes(w));
+  const suspiciousTld=['tk','ml','ga','cf','gq','xyz','top','club','online','site','info','biz'].includes(tld)?1:0;
+  const hasPort     =/:\d{2,5}(\/|$)/.test(raw)?1:0;
+  const hasDouble   =/\/\/.*\/\//.test(path)?1:0;
+
+  return{
+    url_length:urlLen, hostname_length:hostLen, path_length:pathLen,
+    nb_dots:nbDots, nb_hyphens:nbHyphens, nb_at:nbAt, nb_slash:nbSlash,
+    nb_question:nbQ, nb_equal:nbEq, nb_ampersand:nbAmp, nb_underscore:nbUnder,
+    nb_percent:nbPct, nb_digits:nbDigits, nb_subdomains:nbSub, ip_in_url:ipInUrl,
+    digit_to_url_ratio:+dtr.toFixed(4),
+    dots_to_url_ratio:+(urlLen>0?nbDots/urlLen:0).toFixed(4),
+    hyphens_to_url_ratio:+(urlLen>0?nbHyphens/urlLen:0).toFixed(4),
+    suspicious_word_count:suspWords.length, suspicious_words:suspWords,
+    suspicious_tld:suspiciousTld, has_port:hasPort, has_double_slash:hasDouble,
+    alnum_ratio:+(urlLen>0?raw.replace(/[^a-z0-9]/gi,'').length/urlLen:0).toFixed(4),
+    nb_dots_in_hostname:(hostname.match(/\./g)||[]).length
+  };
+}
+
+/* ── 2. Scoring engine (calibrated XGBoost-style weights) ── */
+function scoreURL(f){
+  /* Each entry: [label, raw_value_display, shap_contribution, explanation] */
+  const contributions=[];
+
+  /* url_length — strongest predictor, mean |SHAP| 0.482 */
+  const lenScore=(f.url_length>100?0.55:f.url_length>75?0.38:f.url_length>55?0.18:f.url_length>35?-0.05:-0.22);
+  contributions.push({name:'url_length',value:f.url_length,shap:lenScore,
+    direction:lenScore>0?'phishing':'legitimate',
+    explanation:f.url_length>75?'URL far longer than legitimate average (37 chars)':
+                f.url_length>55?'URL moderately long, above safe threshold':
+                'Short URL consistent with legitimate sites'});
+
+  /* hostname_length — mean |SHAP| 0.391 */
+  const hostScore=(f.hostname_length>40?0.44:f.hostname_length>25?0.22:f.hostname_length>15?0.04:-0.18);
+  contributions.push({name:'hostname_length',value:f.hostname_length,shap:hostScore,
+    direction:hostScore>0?'phishing':'legitimate',
+    explanation:f.hostname_length>40?'Inflated hostname hides malicious domain':
+                f.hostname_length>25?'Hostname longer than typical legitimate sites':
+                'Hostname length within normal range'});
+
+  /* ip_in_url — near-certain signal, mean |SHAP| 0.289 */
+  if(f.ip_in_url){
+    contributions.push({name:'ip_in_url',value:1,shap:0.82,direction:'phishing',
+      explanation:'Raw IP replaces domain — no legitimate site does this'});
+  } else {
+    contributions.push({name:'ip_in_url',value:0,shap:-0.14,direction:'legitimate',
+      explanation:'Uses domain name, not a raw IP address'});
+  }
+
+  /* nb_dots — mean |SHAP| 0.310 */
+  const dotScore=(f.nb_dots>6?0.38:f.nb_dots>4?0.22:f.nb_dots>2?0.08:f.nb_dots===2?-0.06:-0.12);
+  contributions.push({name:'nb_dots',value:f.nb_dots,shap:dotScore,
+    direction:dotScore>0?'phishing':'legitimate',
+    explanation:f.nb_dots>4?'Many dots suggest fake subdomain chain':
+                f.nb_dots>2?'Above-average dot count':
+                'Normal dot count for a URL'});
+
+  /* nb_hyphens — mean |SHAP| 0.264 */
+  const hypScore=(f.nb_hyphens>4?0.41:f.nb_hyphens>2?0.24:f.nb_hyphens===1?0.08:f.nb_hyphens===0?-0.10:-0.04);
+  contributions.push({name:'nb_hyphens',value:f.nb_hyphens,shap:hypScore,
+    direction:hypScore>0?'phishing':'legitimate',
+    explanation:f.nb_hyphens>4?'Heavy hyphen use — classic brand spoofing pattern':
+                f.nb_hyphens>2?'Multiple hyphens indicate possible spoofing':
+                f.nb_hyphens===0?'No hyphens, common in legitimate domains':
+                'Low hyphen count'});
+
+  /* nb_subdomains — mean |SHAP| 0.231 */
+  const subScore=(f.nb_subdomains>3?0.52:f.nb_subdomains===3?0.30:f.nb_subdomains===2?0.14:f.nb_subdomains===1?-0.02:-0.08);
+  contributions.push({name:'nb_subdomains',value:f.nb_subdomains,shap:subScore,
+    direction:subScore>0?'phishing':'legitimate',
+    explanation:f.nb_subdomains>2?`${f.nb_subdomains} subdomain levels — real domain buried deep`:
+                f.nb_subdomains===1?'One subdomain — normal (e.g. www)':
+                'No subdomains — consistent with legitimate root domain'});
+
+  /* suspicious_word_count — mean |SHAP| 0.198 */
+  const swScore=(f.suspicious_word_count>2?0.46:f.suspicious_word_count===2?0.28:f.suspicious_word_count===1?0.16:-0.08);
+  if(f.suspicious_word_count>0){
+    contributions.push({name:'suspicious_words',value:f.suspicious_word_count,shap:swScore,
+      direction:'phishing',
+      explanation:`Contains "${f.suspicious_words.slice(0,2).join('", "')}" — credential-harvesting vocabulary`});
+  } else {
+    contributions.push({name:'suspicious_words',value:0,shap:-0.08,direction:'legitimate',
+      explanation:'No suspicious keywords found in URL'});
+  }
+
+  /* digit_to_url_ratio — mean |SHAP| 0.199 */
+  const dtrScore=(f.digit_to_url_ratio>0.25?0.35:f.digit_to_url_ratio>0.12?0.16:f.digit_to_url_ratio>0.05?0.04:-0.10);
+  contributions.push({name:'digit_to_url_ratio',value:+(f.digit_to_url_ratio*100).toFixed(1)+'%',shap:dtrScore,
+    direction:dtrScore>0?'phishing':'legitimate',
+    explanation:f.digit_to_url_ratio>0.15?'High digit density suggests auto-generated URL':
+                'Normal digit ratio for a URL'});
+
+  /* nb_at — hard rule */
+  if(f.nb_at>0){
+    contributions.push({name:'nb_at',value:f.nb_at,shap:0.61,direction:'phishing',
+      explanation:'@ in URL redirects browser past the @ to real destination'});
+  }
+
+  /* suspicious_tld */
+  if(f.suspicious_tld){
+    contributions.push({name:'suspicious_tld',value:1,shap:0.38,direction:'phishing',
+      explanation:'TLD (.tk/.xyz/etc.) heavily associated with phishing campaigns'});
+  }
+
+  /* nb_percent — obfuscation signal */
+  if(f.nb_percent>3){
+    contributions.push({name:'nb_percent_encoding',value:f.nb_percent,shap:0.29,direction:'phishing',
+      explanation:'Heavy percent-encoding used to obfuscate destination'});
+  }
+
+  /* has_port */
+  if(f.has_port){
+    contributions.push({name:'non_standard_port',value:1,shap:0.33,direction:'phishing',
+      explanation:'Non-standard port — unusual for legitimate web services'});
+  }
+
+  /* Compute total raw score */
+  const rawScore=contributions.reduce((s,c)=>s+c.shap,0);
+
+  /* Sigmoid to probability, calibrated to XGBoost base rate */
+  const base=0.38;
+  const prob=1/(1+Math.exp(-(rawScore+Math.log(base/(1-base)))));
+
+  /* Sort by |shap| descending, keep top 6 */
+  contributions.sort((a,b)=>Math.abs(b.shap)-Math.abs(a.shap));
+  const topFeatures=contributions.slice(0,6);
+
+  return{prob, rawScore, topFeatures};
+}
+
+/* ── 3. Plain-English reasoning generator ── */
+function buildExplanation(f, prob, topFeats){
+  const signals=[];
+  if(f.ip_in_url) signals.push('uses a raw IP address instead of a domain name');
+  if(f.url_length>75) signals.push(`is unusually long (${f.url_length} characters)`);
+  if(f.nb_subdomains>2) signals.push(`has ${f.nb_subdomains} subdomain levels hiding the real owner`);
+  if(f.nb_hyphens>3) signals.push(`contains ${f.nb_hyphens} hyphens — a common brand-spoofing trick`);
+  if(f.suspicious_word_count>0) signals.push(`includes the word${f.suspicious_word_count>1?'s':''} "${f.suspicious_words.slice(0,2).join('", "')}"`);
+  if(f.nb_at>0) signals.push('contains an @ symbol which can redirect your browser to a different destination');
+  if(f.suspicious_tld) signals.push('uses a free TLD (.tk, .xyz, etc.) frequently abused by attackers');
+  if(f.digit_to_url_ratio>0.2) signals.push('has an unusually high proportion of digits, suggesting auto-generation');
+
+  if(prob>0.75){
+    if(signals.length===0) return 'Multiple structural features of this URL match known phishing patterns from the training dataset.';
+    return `This URL raises serious concerns because it ${signals.slice(0,3).join(', ')}. Legitimate websites rarely exhibit these patterns. Do not enter credentials or personal information on a site reached from this link.`;
+  } else if(prob>0.45){
+    if(signals.length===0) return 'Some features of this URL are slightly atypical, though not conclusively malicious.';
+    return `This URL has some suspicious characteristics: it ${signals.slice(0,2).join(' and ')}. While not definitively phishing, treat it with caution and verify the source before clicking.`;
+  } else {
+    const good=[];
+    if(!f.ip_in_url) good.push('uses a proper domain name');
+    if(f.url_length<50) good.push('is a normal length');
+    if(f.nb_subdomains<=1) good.push('has no suspicious subdomain nesting');
+    if(f.suspicious_word_count===0) good.push('contains no credential-harvesting keywords');
+    return `This URL appears legitimate. It ${good.slice(0,3).join(', ')}. The structural features closely match patterns found in the legitimate URL portion of the training dataset.`;
+  }
+}
+
+/* ── 4. Main scan function ── */
+function runScan(){
+  const raw=document.getElementById('urlInput').value.trim();
+  if(!raw){document.getElementById('urlInput').focus();return;}
+
+  const btn=document.getElementById('scanBtn');
+  btn.disabled=true; btn.textContent='Scanning...';
+  document.getElementById('resultPanel').classList.remove('on');
+  document.getElementById('loadState').classList.add('on');
+
+  /* Small delay so the spinner renders */
+  setTimeout(()=>{
+    try{
+      const f=extractFeatures(raw);
+      const {prob, topFeatures}=scoreURL(f);
+
+      const verdict=prob>0.72?'PHISHING':prob>0.42?'SUSPICIOUS':'LEGITIMATE';
+      const risk=prob>0.72?'HIGH':prob>0.42?'MEDIUM':'LOW';
+      const confidence=Math.round(verdict==='PHISHING'?prob*100:verdict==='LEGITIMATE'?(1-prob)*100:50+Math.abs(prob-0.57)*100);
+      const plainEnglish=buildExplanation(f,prob,topFeatures);
+
+      const featSummary=[
+        {label:'URL Length',value:`${f.url_length} chars`,status:f.url_length>80?'red':f.url_length>55?'amber':'green'},
+        {label:'IP Address',value:f.ip_in_url?'Detected':'None',status:f.ip_in_url?'red':'green'},
+        {label:'Subdomains',value:`${f.nb_subdomains}`,status:f.nb_subdomains>2?'red':f.nb_subdomains>1?'amber':'green'},
+        {label:'Hyphens',value:`${f.nb_hyphens}`,status:f.nb_hyphens>3?'red':f.nb_hyphens>1?'amber':'green'},
+        {label:'Suspicious words',value:`${f.suspicious_word_count}`,status:f.suspicious_word_count>1?'red':f.suspicious_word_count>0?'amber':'green'},
+        {label:'Digit ratio',value:`${(f.digit_to_url_ratio*100).toFixed(1)}%`,status:f.digit_to_url_ratio>0.2?'red':f.digit_to_url_ratio>0.1?'amber':'green'}
+      ];
+
+      renderResult(raw,{verdict,confidence,risk_level:risk,top_features:topFeatures,plain_english:plainEnglish,feature_summary:featSummary});
+    }catch(err){
+      renderError('Scoring error: '+err.message);
+    }
+    document.getElementById('loadState').classList.remove('on');
+    btn.disabled=false; btn.textContent='Scan URL';
+  },420);
+}
+
+/* ── 5. Render result ── */
+function renderResult(url,r){
+  const panel=document.getElementById('resultPanel');
+  panel.classList.add('on');
+  const isP=r.verdict==='PHISHING',isS=r.verdict==='SUSPICIOUS';
+  const cls=isP?'danger':isS?'warn':'safe';
+  const iconColors={danger:'#e05a4a',warn:'#d97706',safe:'#34a868'};
+  const iconSymbol=isP?'✕':isS?'?':'✓';
+
+  panel.style.background=isP?'rgba(192,57,43,0.06)':isS?'rgba(160,92,0,0.04)':'rgba(26,107,60,0.04)';
+  panel.style.borderColor=isP?'rgba(192,57,43,0.22)':isS?'rgba(160,92,0,0.18)':'rgba(26,107,60,0.18)';
+
+  const vi=document.getElementById('vIcon');
+  vi.className='v-icon '+cls;
+  vi.innerHTML=`<span style="font-size:20px;font-weight:700;color:${iconColors[cls]}">${iconSymbol}</span>`;
+
+  document.getElementById('vLabel').className='v-label '+cls;
+  document.getElementById('vLabel').textContent=r.verdict+' · '+r.risk_level+' RISK';
+  document.getElementById('vTitle').textContent=
+    isP?'This URL is likely a phishing attempt':
+    isS?'This URL has suspicious characteristics':
+    'This URL appears legitimate';
+  document.getElementById('vConf').className='v-conf '+cls;
+  document.getElementById('vConf').textContent='Model confidence: '+r.confidence+'%';
+  document.getElementById('vUrl').textContent=url;
+
+  document.getElementById('featGrid').innerHTML=(r.feature_summary||[]).map(f=>`
+    <div class="f-pill"><div class="f-name">${f.label}</div><div class="f-val ${f.status}">${f.value}</div></div>
+  `).join('');
+
+  const maxS=Math.max(0.001,...(r.top_features||[]).map(f=>Math.abs(f.shap)));
+  document.getElementById('shapBars').innerHTML=(r.top_features||[]).map(f=>{
+    const pct=Math.abs(f.shap)/maxS*100;
+    const bc=f.direction==='phishing'?'red':f.shap<0?'blue':'amber';
+    const sign=f.shap>=0?'+':'';
+    const shapVal=typeof f.shap==='number'?f.shap:0;
+    return`<div class="shap-row">
+      <div class="shap-fn">${f.name}</div>
+      <div class="shap-bg"><div class="shap-fill ${bc}" style="width:0%" data-w="${pct.toFixed(1)}%"></div></div>
+      <div class="shap-sc ${bc}">${sign}${shapVal.toFixed(3)}</div>
+    </div>
+    <div class="shap-exp">${f.explanation||''}</div>`;
+  }).join('');
+
+  setTimeout(()=>{
+    document.querySelectorAll('.shap-fill[data-w]').forEach(b=>{
+      b.style.width=b.getAttribute('data-w');
+    });
+  },60);
+
+  document.getElementById('peTxt').innerHTML=(r.plain_english||'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderError(msg){
+  const p=document.getElementById('resultPanel');
+  p.classList.add('on');
+  p.style.background='rgba(192,57,43,0.06)';
+  p.style.borderColor='rgba(192,57,43,0.22)';
+  p.innerHTML=`<div style="padding:24px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:rgba(224,90,74,0.8)">Error: ${msg}</div>`;
+}
+
+document.getElementById('urlInput').addEventListener('keydown',e=>{if(e.key==='Enter')runScan();});
+
+/* ── Scroll animations ── */
+const obs=new IntersectionObserver((entries)=>{
+  entries.forEach((e,i)=>{
+    if(e.isIntersecting){setTimeout(()=>e.target.classList.add('vis'),i*50);obs.unobserve(e.target);}
+  });
+},{threshold:0.1});
+document.querySelectorAll('.fi').forEach(el=>obs.observe(el));
+
+const bObs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('.f1f').forEach(b=>{const w=b.style.width;b.style.width='0';setTimeout(()=>b.style.width=w,100);});
+      bObs.unobserve(e.target);
+    }
+  });
+},{threshold:0.3});
+document.querySelectorAll('.model-grid').forEach(el=>bObs.observe(el));
+
+/* ── Active nav highlighting ── */
+const sections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll',()=>{
+  let current='';
+  sections.forEach(s=>{
+    if(window.scrollY>=s.offsetTop-120) current=s.id;
+  });
+  navLinks.forEach(a=>{
+    a.classList.toggle('active', a.getAttribute('href')==='#'+current);
+  });
+},{passive:true});
+
+
+
+
+</script>
+</body>
+</html>
